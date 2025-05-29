@@ -60,7 +60,6 @@ func (n *Node) addPeer(id string, addr string) error {
 
 // dicoverPeers periodically will run in the background to discover new peers joining to p2p network
 func (n *Node) discoverPeers(ctx context.Context) {
-	n.wg.Add(1)
 	defer n.wg.Done()
 	ctx, span := otel.Tracer("discoverPeers.tracer").Start(ctx, "discoverPeers.span")
 	defer span.End()
@@ -70,7 +69,8 @@ func (n *Node) discoverPeers(ctx context.Context) {
 
 	for {
 		select {
-		case <-n.ctx.Done():
+		case <-ctx.Done():
+			n.logger.Debug().Msg("discovery goroutine closed")
 			return
 		case <-ticker.C:
 			n.performDiscovery(ctx)

@@ -57,6 +57,7 @@ func NewNode(logger *zerolog.Logger, addr string, bootstrapAddr string, isBootst
 
 func (n *Node) Start(ctx context.Context) error {
 	// start the grpc server of each p2p node
+	n.wg.Add(1)
 	go n.startServer()
 
 	// If this node is not a bootstrap node send a connect to the bootstrap node to get the list of peers
@@ -67,44 +68,48 @@ func (n *Node) Start(ctx context.Context) error {
 	}
 
 	// start the peer discovery process
+	n.wg.Add(1)
 	go n.discoverPeers(n.ctx)
 	// start message processing
+	n.wg.Add(1)
 	go n.processMessages(n.ctx)
 
 	return nil
 }
 
 func (n *Node) Stop(ctx context.Context) error {
-	ctx, cancelFunc := context.WithTimeout(ctx, time.Second*5)
+	ctx, cancelFunc := context.WithTimeout(ctx, time.Second*10)
 	defer cancelFunc()
 
 	n.cancelFunc()
 	done := make(chan struct{})
-	n.PeersMutex.Lock()
-	for _, p := range n.Peers {
-		if p.Conn != nil {
-			n.logger.Info().Msg("closing peer outbound connection")
-			p.Conn.Close()
-		}
-	}
-	n.PeersMutex.Unlock()
-
+	go func() {
+		n.wg.Wait()
+		close(done)
+	}()
 	n.logger.Info().Msg("stopping grpc server")
 	if n.Server != nil {
-		n.Server.Stop()
-		close(done)
+		n.Server.GracefulStop()
 	}
 
 	select {
 	case <-done:
-		return nil
+		// closing connections after making sure that no one is using them
+		n.PeersMutex.Lock()
+		for _, p := range n.Peers {
+			if p.Conn != nil {
+				n.logger.Info().Msg("closing peer outbound connection")
+				p.Conn.Close()
+			}
+		}
+		n.PeersMutex.Unlock()
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+	return nil
 }
 
 func (n *Node) startServer() {
-	n.wg.Add(1)
 	defer n.wg.Done()
 
 	n.Server = grpc.NewServer()
@@ -126,14 +131,13 @@ func (n *Node) startServer() {
 
 // TODO
 func (n *Node) processMessages(ctx context.Context) {
-	n.wg.Add(1)
 	defer n.wg.Done()
 	for {
 		select {
 		case <-ctx.Done():
+			n.logger.Debug().Msg("processMessage goroutine closed")
 			return
-		default:
-			<-n.MessageChannel
+		case <-n.MessageChannel:
 			n.logger.Info().Msgf("message processed succefully")
 		}
 
