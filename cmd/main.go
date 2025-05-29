@@ -55,7 +55,6 @@ func main() {
 		logger.Error().Err(err).Msg("couldn't start the server")
 		return
 	}
-
 	for {
 		if err := <-shutdownChan; err == nil {
 			return

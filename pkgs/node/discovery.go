@@ -19,7 +19,7 @@ func (n *Node) addPeer(id string, addr string) error {
 	defer n.PeersMutex.Unlock()
 
 	if _, exists := n.Peers[id]; exists {
-		n.logger.Info().
+		n.logger.Debug().
 			Str("peer_id", id).
 			Str("peer_address", addr).
 			Msg("ignores adding new peer. peer already exists")

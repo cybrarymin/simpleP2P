@@ -67,9 +67,9 @@ func (n *Node) Start(ctx context.Context) error {
 	}
 
 	// start the peer discovery process
-	go n.discoverPeers(ctx)
+	go n.discoverPeers(n.ctx)
 	// start message processing
-	go n.processMessages()
+	go n.processMessages(n.ctx)
 
 	return nil
 }
@@ -79,7 +79,7 @@ func (n *Node) Stop(ctx context.Context) error {
 	defer cancelFunc()
 
 	n.cancelFunc()
-
+	done := make(chan struct{})
 	n.PeersMutex.Lock()
 	for _, p := range n.Peers {
 		if p.Conn != nil {
@@ -92,13 +92,8 @@ func (n *Node) Stop(ctx context.Context) error {
 	n.logger.Info().Msg("stopping grpc server")
 	if n.Server != nil {
 		n.Server.Stop()
-	}
-
-	done := make(chan struct{})
-	go func() {
-		n.wg.Wait()
 		close(done)
-	}()
+	}
 
 	select {
 	case <-done:
@@ -130,12 +125,18 @@ func (n *Node) startServer() {
 }
 
 // TODO
-func (n *Node) processMessages() {
+func (n *Node) processMessages(ctx context.Context) {
 	n.wg.Add(1)
 	defer n.wg.Done()
 	for {
-		<-n.MessageChannel
-		n.logger.Info().Msgf("message processed succefully")
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			<-n.MessageChannel
+			n.logger.Info().Msgf("message processed succefully")
+		}
+
 	}
 }
 
