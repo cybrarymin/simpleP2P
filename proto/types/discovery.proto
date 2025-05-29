@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option go_package = "protogen/pb";
+
+
+message PeerInfo {
+    string Id = 1 [ json_name = "id" ];
+    string Address = 2 [ json_name = "address" ];
+}
+
+message DiscoveryRequest {
+    PeerInfo Peer = 1 [ json_name = "peer" ];
+}
+
+message DiscoveryResponse {
+    repeated PeerInfo Peers = 1 [ json_name = "peer" ];
+}
+
+message BootstrapIDReq {}
+
+message BootstrapIDResp {
+    string Id = 1 [ json_name = "id" ];
+}

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option go_package = "protogen/pb";
+import "google/protobuf/timestamp.proto";
+
+message ChatMessage {
+    string Sender = 1 [ json_name = "sender" ];
+    string Content = 2 [ json_name = "content" ];
+    google.protobuf.Timestamp Time = 3 [ json_name = "times" ];
+}
+
+message SendMessageRequest {
+    ChatMessage Message = 1 [ json_name = "message" ];
+}
+
+message SendMessageResponse {
+    ChatMessage Message = 1 [ json_name = "message" ];
+}
+
+message SubscribeRequest {}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+option go_package = "protogen/pb";
+import "proto/types/chat.proto";
+import "proto/types/discovery.proto";
+
+
+service ChatService {
+    rpc Discover (DiscoveryRequest) returns (DiscoveryResponse);
+    rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
+    rpc Subscrible (SubscribeRequest) returns (stream SendMessageResponse);
+}
+
+service NodeService {
+    rpc FetchID (BootstrapIDReq) returns (BootstrapIDResp);
+}

@@ -5,7 +5,9 @@ package cmd
 
 import (
 	"os"
+	"time"
 
+	observ "github.com/cybrarymin/simpleP2P/observability"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +19,7 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-
+		main()
 	},
 }
 
@@ -39,5 +41,14 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
+	rootCmd.PersistentFlags().StringVar(&observ.CmdJaegerHostFlag, "jeager-host", "localhost", "Jaeger/jaeger-collector server address for sending opentelemetry traces")
+	rootCmd.PersistentFlags().StringVar(&observ.CmdJaegerPortFlag, "jeager-port", "5317", "Jaeger/jaeger-collector server port for sending opentelemetry traces")
+	rootCmd.PersistentFlags().DurationVar(&observ.CmdJaegerConnectionTimeout, "jeager-conn-timeout", time.Second*5, "connection will fail if it couldn't be established to jaeger host within this time")
+	rootCmd.PersistentFlags().DurationVar(&observ.CmdSpanExportInterval, "jeager-trace-exporter-intervals", time.Second*5, "intervals which tracer batch exporter will send the traces to the jeager")
+	rootCmd.PersistentFlags().StringVar(&CmdLogLevel, "log-level", "info", "application log level: debug, info, warn, error, fatal, panic, trace, disabled")
+	rootCmd.PersistentFlags().StringVar(&CmdNodeAddr, "node-address", "0.0.0.0", "the address of the node or interface this node should listen and work on")
+	rootCmd.PersistentFlags().StringVar(&CmdNodePort, "node-port", "6881", "the address of the node or interface this node should listen and work on")
+	rootCmd.PersistentFlags().StringVar(&CmdBootstrapNodeAddr, "bootstrap-node-address", "localhost:6881", "the address of the bootstrap node in p2p network")
+	rootCmd.PersistentFlags().BoolVar(&CmdBootstrapNode, "bootstrap-node", false, "specifies if this node is bootstrap or not")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
